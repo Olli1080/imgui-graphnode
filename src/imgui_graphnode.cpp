@@ -28,13 +28,13 @@ void IMGUI_GRAPHNODE_NAMESPACE::DestroyContext()
     g_ctx.gvcontext = nullptr;
 }
 
-bool IMGUI_GRAPHNODE_NAMESPACE::BeginNodeGraph(char const * id, ImGuiGraphNodeLayout layout, float pixel_per_unit)
+bool IMGUI_GRAPHNODE_NAMESPACE::BeginNodeGraph(std::string const& id, ImGuiGraphNodeLayout layout, float pixel_per_unit)
 {
-    g_ctx.lastid = ImGui::GetID(id);
+    g_ctx.lastid = ImGui::GetID(id.c_str());
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph == nullptr);
     IM_ASSERT(cache.graphid_current.empty());
-    g_ctx.gvgraph = agopen(const_cast<char *>("g"), Agdirected, 0);
+    g_ctx.gvgraph = agopen(const_cast<char *>("g"), Agdirected, nullptr);
     cache.layout = layout;
     cache.pixel_per_unit = pixel_per_unit;
 
@@ -45,20 +45,20 @@ bool IMGUI_GRAPHNODE_NAMESPACE::BeginNodeGraph(char const * id, ImGuiGraphNodeLa
     return true;
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(char const * id)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id)
 {
     ImVec4 const color = ImGui::GetStyle().Colors[ImGuiCol_Text];
     ImVec4 const fillcolor = ImVec4(0.f, 0.f, 0.f, 0.f);
     NodeGraphAddNode(id, color, fillcolor);
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(char const * id, ImVec4 const & color, ImVec4 const & fillcolor)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id, ImVec4 const & color, ImVec4 const & fillcolor)
 {
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph != nullptr);
     Agnode_t * const n = agnode(g_ctx.gvgraph, ImGuiIDToString(id), 1);
     IM_ASSERT(n != nullptr);
-    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id);
+    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
     auto const color_str = ImVec4ColorToString(color);
     auto const fillcolor_str = ImVec4ColorToString(fillcolor);
     agsafeset(n, (char *)"label", text, "");
@@ -69,19 +69,19 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(char const * id, ImVec4 const &
     cache.graphid_current += color_str;
     cache.graphid_current += fillcolor_str;
 
-    ImGuiID const imid = ImGui::GetID(id);
+    ImGuiID const imid = ImGui::GetID(id.c_str());
     auto const it = cache.graph.nodesBB.find(imid);
     ImRect const bb = it != cache.graph.nodesBB.end() ? it->second : ImRect();
     ImGui::ItemAdd(bb, imid);
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(char const * id, char const * node_id_a, char const * node_id_b)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(std::string const& id, std::string const& node_id_a, std::string const& node_id_b)
 {
     ImVec4 const color = ImGui::GetStyle().Colors[ImGuiCol_Text];
     NodeGraphAddEdge(id, node_id_a, node_id_b, color);
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(char const * id, char const * node_id_a, char const * node_id_b, ImVec4 const & color)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(std::string const& id, std::string const& node_id_a, std::string const& node_id_b, ImVec4 const & color)
 {
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph != nullptr);
@@ -91,12 +91,12 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(char const * id, char const * n
     IM_ASSERT(b != nullptr);
     Agedge_t * const e = agedge(g_ctx.gvgraph, a, b, ImGuiIDToString(id), 1);
     IM_ASSERT(e != nullptr);
-    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id);
+    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
     auto const color_str = ImVec4ColorToString(color);
     agsafeset(e, (char *)"label", text, "");
-    ImGuiID const imid = ImGui::GetID(id, ImGui::FindRenderedTextEnd(id));
+    ImGuiID const imid = ImGui::GetID(id.c_str(), ImGui::FindRenderedTextEnd(id.c_str()));
     char identifier[16];
-    sprintf(identifier, "#%x", imid);
+    sprintf_s(identifier, "#%x", imid);
     // graphviz library doesn't serialize the edge's identifier, so we use the
     // color field to store the ImGuiID, which will later be used to retrieve
     // the edge's properties.
@@ -134,7 +134,7 @@ int ImGuiGraphNodeFillDrawNodeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNod
     if (drawnodes)
     {
         constexpr int num_segments = IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT - 1;
-        static_assert(num_segments > 0, "");
+        static_assert(num_segments > 0);
         float a_min = 0.f;
         float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
 
@@ -161,7 +161,7 @@ int ImGuiGraphNodeFillDrawNodeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNod
                 cursor_pos.x + (node.pos.x + node.size.x / 2.f) * ppu,
                 cursor_pos.y + ((graph.size.y - node.pos.y) + node.size.y / 2.f) * ppu
             );
-            ImGuiID const imid = atol(node.name.c_str());
+            ImGuiID const imid = std::stol(node.name);
             graph.nodesBB[imid] = bb;
         }
     }
@@ -175,7 +175,7 @@ int ImGuiGraphNodeFillDrawEdgeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNod
     if (drawedges)
     {
         constexpr int points_count = IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT;
-        static_assert(points_count > 1, "");
+        static_assert(points_count > 1);
 
         for (int i = 0; i < count; ++i)
         {
@@ -213,7 +213,7 @@ int ImGuiGraphNodeFillDrawEdgeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNod
             }
             for (int x = 0; x < points_count; ++x)
             {
-                drawedges[i].path[x] = ImGuiGraphNode_BezierVec2(edge.points.data(), (int)edge.points.size(), x / float(points_count - 1));
+                drawedges[i].path[x] = ImGuiGraphNode_BezierVec2(edge.points, x / float(points_count - 1));
                 drawedges[i].path[x].y = graph.size.y - drawedges[i].path[x].y;
                 drawedges[i].path[x].x *= ppu;
                 drawedges[i].path[x].y *= ppu;

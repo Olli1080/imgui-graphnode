@@ -2,13 +2,16 @@
 #include "imgui_graphnode_internal.h"
 #include "imgui_internal.h"
 
+#include <algorithm>
+#include <ranges>
+
 ImGuiGraphNodeContext g_ctx;
 
-ImGuiGraphNode_ShortString<32> ImGuiIDToString(char const * id)
+ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id)
 {
     ImGuiGraphNode_ShortString<32> str;
 
-    sprintf(str.buf, "%u", ImGui::GetID(id));
+    sprintf_s(str.buf, "%u", ImGui::GetID(id.c_str()));
     return str;
 }
 
@@ -17,118 +20,151 @@ ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const & color)
     ImGuiGraphNode_ShortString<16> str;
     ImU32 const rgba = ImGui::ColorConvertFloat4ToU32(color);
 
-    sprintf(str.buf, "#%x", rgba);
+    sprintf_s(str.buf, "#%x", rgba);
     return str;
 }
 
-ImU32 ImGuiGraphNode_StringToU32Color(char const * color)
+ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color)
 {
     ImU32 rgba;
 
-    sscanf(color, "#%x", &rgba);
+    sscanf_s(color.c_str(), "#%x", &rgba);
     return rgba;
 }
 
-ImVec4 ImGuiGraphNode_StringToImVec4Color(char const * color)
+ImVec4 ImGuiGraphNode_StringToImVec4Color(std::string const& color)
 {
     return ImGui::ColorConvertU32ToFloat4(ImGuiGraphNode_StringToU32Color(color));
 }
 
-char * ImGuiGraphNode_ReadToken(char ** stringp)
+std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp)
 {
-    if (*stringp && **stringp == '"')
-    {
-        *stringp += 1;
-        char * token = strsep(stringp, "\"");
-        strsep(stringp, " ");
-        return token;
-    }
-    return strsep(stringp, " ");
-}
+    std::string output;
 
+    char token = stringp.front();
+    if (token == '"')
+    {
+        stringp.advance(1);
+        do
+        {
+            token = stringp.front();
+            output += token;
+            stringp.advance(1);
+
+            if (token == '\"')
+            {
+                stringp.advance(1);
+                break;
+            }
+
+        } while (!stringp.empty());
+
+        do
+        {
+            stringp.advance(1);
+            token = stringp.front();
+
+            if (token == ' ')
+            {
+                stringp.advance(1);
+                break;	            
+            }
+        } while (!stringp.empty());
+        return output;
+    }
+    do
+    {
+        stringp.advance(1);
+        token = stringp.front();
+
+        if (token == ' ')
+        {
+            stringp.advance(1);
+            break;
+        }
+    } while (!stringp.empty());
+    return output;
+}
+/*
 char * ImGuiGraphNode_ReadLine(char ** stringp)
 {
     return strsep(stringp, "\n");
 }
-
-bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, char const * data, size_t size)
+*/
+bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, std::vector<char> const& data)
 {
-    char * copy = static_cast<char *>(alloca(sizeof(*copy) * size + 1));
-    char * line = nullptr;
-
-    memcpy(copy, data, size);
-    copy[size] = '\0';
-    while ((line = ImGuiGraphNode_ReadLine(&copy)) != nullptr)
+    for (auto line : std::views::split(data, '\n'))
     {
-        char * token = ImGuiGraphNode_ReadToken(&line);
+        auto token = ImGuiGraphNode_ReadToken(line);
 
-        if (strcmp(token, "graph") == 0)
+        if (token == "graph")
         {
-            cache.graph.scale = atof(ImGuiGraphNode_ReadToken(&line));
-            cache.graph.size.x = atof(ImGuiGraphNode_ReadToken(&line));
-            cache.graph.size.y = atof(ImGuiGraphNode_ReadToken(&line));
+            cache.graph.scale = std::stof(ImGuiGraphNode_ReadToken(line));
+            cache.graph.size.x = std::stof(ImGuiGraphNode_ReadToken(line));
+            cache.graph.size.y = std::stof(ImGuiGraphNode_ReadToken(line));
         }
-        else if (strcmp(token, "node") == 0)
+        else if (token == "node")
         {
             ImGuiGraphNode_Node node;
 
-            node.name = ImGuiGraphNode_ReadToken(&line);
-            node.pos.x = atof(ImGuiGraphNode_ReadToken(&line));
-            node.pos.y = atof(ImGuiGraphNode_ReadToken(&line));
-            node.size.x = atof(ImGuiGraphNode_ReadToken(&line));
-            node.size.y = atof(ImGuiGraphNode_ReadToken(&line));
-            node.label = ImGuiGraphNode_ReadToken(&line);
-            ImGuiGraphNode_ReadToken(&line); // style
-            ImGuiGraphNode_ReadToken(&line); // shape
-            node.color = ImGuiGraphNode_StringToU32Color(ImGuiGraphNode_ReadToken(&line));
-            node.fillcolor = ImGuiGraphNode_StringToU32Color(ImGuiGraphNode_ReadToken(&line));
+            node.name = ImGuiGraphNode_ReadToken(line);
+            node.pos.x = std::stof(ImGuiGraphNode_ReadToken(line));
+            node.pos.y = std::stof(ImGuiGraphNode_ReadToken(line));
+            node.size.x = std::stof(ImGuiGraphNode_ReadToken(line));
+            node.size.y = std::stof(ImGuiGraphNode_ReadToken(line));
+            node.label = ImGuiGraphNode_ReadToken(line);
+            ImGuiGraphNode_ReadToken(line); // style
+            ImGuiGraphNode_ReadToken(line); // shape
+            node.color = ImGuiGraphNode_StringToU32Color(ImGuiGraphNode_ReadToken(line));
+            node.fillcolor = ImGuiGraphNode_StringToU32Color(ImGuiGraphNode_ReadToken(line));
             cache.graph.nodes.push_back(node);
         }
-        else if (strcmp(token, "edge") == 0)
+        else if (token == "edge")
         {
             ImGuiGraphNode_Edge edge;
 
-            edge.tail = ImGuiGraphNode_ReadToken(&line);
-            edge.head = ImGuiGraphNode_ReadToken(&line);
-            int const n = atoi(ImGuiGraphNode_ReadToken(&line));
+            edge.tail = ImGuiGraphNode_ReadToken(line);
+            edge.head = ImGuiGraphNode_ReadToken(line);
+            const int n = std::stoi(ImGuiGraphNode_ReadToken(line));
             edge.points.resize(n);
             for (int i = 0; i < n; ++i)
             {
-                edge.points[i].x = atof(ImGuiGraphNode_ReadToken(&line));
-                edge.points[i].y = atof(ImGuiGraphNode_ReadToken(&line));
+                edge.points[i].x = std::stof(ImGuiGraphNode_ReadToken(line));
+                edge.points[i].y = std::stof(ImGuiGraphNode_ReadToken(line));
             }
 
-            char const * s1 = ImGuiGraphNode_ReadToken(&line);
-            char const * s2 = ImGuiGraphNode_ReadToken(&line);
-            char const * s3 = ImGuiGraphNode_ReadToken(&line);
-            char const * s4 = ImGuiGraphNode_ReadToken(&line); (void)s4; // style
-            char const * s5 = ImGuiGraphNode_ReadToken(&line);
-            char const * identifier = nullptr;
+            std::string s1 = ImGuiGraphNode_ReadToken(line);
+            std::string s2 = ImGuiGraphNode_ReadToken(line);
+            std::string s3 = ImGuiGraphNode_ReadToken(line);
+            std::string s4 = ImGuiGraphNode_ReadToken(line); (void)s4; // style
+            std::string s5 = ImGuiGraphNode_ReadToken(line);
+            std::string identifier;
 
-            if (s3)
+            if (!s3.empty())
             {
                 edge.label = s1;
-                edge.labelPos.x = atof(s2);
-                edge.labelPos.y = atof(s3);
-                identifier = s5 + 1;
+                edge.labelPos.x = std::stof(s2);
+                edge.labelPos.y = std::stof(s3);
+                identifier = s5.data() + 1;
             }
             else
             {
-                identifier = s2 + 1;
+                identifier = s2.data() + 1;
             }
 
             // Edge ImGuiID is stored in the color property.
             // It is used to access edge info, as graphviz doesn't serialize
             // the edge's identifier. The actual color is then retrieve from
             // the context cache.
-            edge.id = strtoul(identifier, nullptr, 16);
+
+            edge.id = std::stoul(identifier, nullptr, 16);
             auto const it = cache.edgeIdToInfo.find(edge.id);
             IM_ASSERT(it != cache.edgeIdToInfo.end());
             edge.color = it->second.color;
 
             cache.graph.edges.push_back(edge);
         }
-        else if (strcmp(token, "stop") == 0)
+        else if (token == "stop")
         {
             return true;
         }
@@ -157,9 +193,9 @@ char const * ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout lay
     }
 }
 
-float ImGuiGraphNode_BSplineVec2ComputeK(ImVec2 const * p, float const * t, int i, int k, float x)
+float ImGuiGraphNode_BSplineVec2ComputeK(std::vector<ImVec2> const& p, std::vector<float> const& t, int i, int k, float x)
 {
-    auto const f = [](float const * t, int i, int k, float x) -> float
+    auto const f = [](std::vector<float> const& t, int i, int k, float x) -> float
     {
         if (t[i + k] == t[i])
             return 0.f;
@@ -171,11 +207,12 @@ float ImGuiGraphNode_BSplineVec2ComputeK(ImVec2 const * p, float const * t, int 
     return f(t, i, k, x) * g(p, t, i, k - 1, x) + (1.f - f(t, i + 1, k, x)) * g(p, t, i + 1, k - 1, x);
 }
 
-ImVec2 ImGuiGraphNode_BSplineVec2(ImVec2 const * p, int m, int n, float x)
+ImVec2 ImGuiGraphNode_BSplineVec2(std::vector<ImVec2> const& p, int m, int n, float x)
 {
-    if (n > (m - 2)) n = m - 2;
-    int const knotscount = m + n + 1;
-    float * const knots = (float *)alloca(knotscount * sizeof(*knots));
+	n = std::min(n, m - 2);
+	int const knotscount = m + n + 1;
+
+    std::vector<float> knots(knotscount);
     int i = 0;
 
     for (; i <= n; ++i) knots[i] = 0.f;
@@ -194,7 +231,7 @@ ImVec2 ImGuiGraphNode_BSplineVec2(ImVec2 const * p, int m, int n, float x)
     return result;
 }
 
-ImVec2 ImGuiGraphNode_BSplineVec2(ImVec2 const * points, int count, float x)
+ImVec2 ImGuiGraphNode_BSplineVec2(std::vector<ImVec2> const& points, int count, float x)
 {
     return ImGuiGraphNode_BSplineVec2(points, count, 3, ImClamp(x, 0.f, 0.9999f));
 }
@@ -259,7 +296,7 @@ int ImGuiGraphNode_BinomialCoefficientTable(int n, int k)
     }
 }
 
-ImVec2 ImGuiGraphNode_BezierVec2(ImVec2 const * points, int count, float x)
+ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, int count, float x)
 {
     ImVec2 result(0.f, 0.f);
 
@@ -288,7 +325,9 @@ void ImGuiGraphNodeRenderGraphLayout(ImGuiGraphNodeContextCache & cache)
     IM_ASSERT(ok == 0);
     ok = gvRenderData(g_ctx.gvcontext, g_ctx.gvgraph, "plain", &data, &size);
     IM_ASSERT(ok == 0);
-    ImGuiGraphNode_ReadGraphFromMemory(cache, data, size);
+    std::vector<char> data_vec(data, data + size);
+
+    ImGuiGraphNode_ReadGraphFromMemory(cache, data_vec);
     gvFreeRenderData(data);
     gvFreeLayout(g_ctx.gvcontext, g_ctx.gvgraph);
 }

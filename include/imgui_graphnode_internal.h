@@ -20,13 +20,13 @@ extern "C"
     do { \
         char const * const end = ImGui::FindRenderedTextEnd(_label); \
         size_t const size = end - _label; \
-        _name = (char *)alloca(size + 1); \
+        _name = (char *)_malloca(size + 1); \
         memcpy(_name, _label, size); \
         _name[size] = '\0'; \
     } while(0)
 
-#define IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT 32
-#define IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT 64
+constexpr auto IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT = 32;
+constexpr auto IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT = 64;
 
 struct ImGuiGraphNode_Node
 {
@@ -117,7 +117,7 @@ template <size_t N>
 class ImGuiGraphNode_ShortString
 {
 public:
-    friend ImGuiGraphNode_ShortString<32> ImGuiIDToString(char const * id);
+    friend ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id);
     friend ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const & color);
 
     operator char *() { return buf; }
@@ -127,16 +127,16 @@ private:
     char buf[N];
 };
 
-IMGUI_API ImGuiGraphNode_ShortString<32> ImGuiIDToString(char const * id);
+IMGUI_API ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id);
 IMGUI_API ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const & color);
-IMGUI_API ImU32 ImGuiGraphNode_StringToU32Color(char const * color);
-IMGUI_API ImVec4 ImGuiGraphNode_StringToImVec4Color(char const * color);
-IMGUI_API char * ImGuiGraphNode_ReadToken(char ** stringp);
-IMGUI_API char * ImGuiGraphNode_ReadLine(char ** stringp);
-IMGUI_API bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, char const * data, size_t size);
+IMGUI_API ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color);
+IMGUI_API ImVec4 ImGuiGraphNode_StringToImVec4Color(std::string const& color);
+IMGUI_API std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp);
+//IMGUI_API char * ImGuiGraphNode_ReadLine(char ** stringp);
+IMGUI_API bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, std::vector<char> const& data, size_t size);
 IMGUI_API char const * ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout);
-IMGUI_API ImVec2 ImGuiGraphNode_BezierVec2(ImVec2 const * points, int count, float x);
-IMGUI_API ImVec2 ImGuiGraphNode_BSplineVec2(ImVec2 const * points, int count, float x);
+IMGUI_API ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, float x);
+IMGUI_API ImVec2 ImGuiGraphNode_BSplineVec2(std::vector<ImVec2> const&, float x);
 IMGUI_API void ImGuiGraphNodeRenderGraphLayout(ImGuiGraphNodeContextCache & cache);
 
 #endif /* !IMGUI_GRAPHNODE_INTERNAL_H_ */
