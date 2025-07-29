@@ -1,0 +1,15 @@
+{
+    "version": 2,
+  
+    "configurePresets": [
+      {
+        "name": "Main",
+        "generator": "Visual Studio 17 2022",
+        "binaryDir": "${sourceDir}/build/Main",
+        "cacheVariables": {
+          "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+          "CMAKE_TOOLCHAIN_FILE": "./externals/vcpkg/scripts/buildsystems/vcpkg.cmake"
+        }
+      }
+    ]
+  }
