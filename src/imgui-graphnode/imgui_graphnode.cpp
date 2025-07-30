@@ -53,7 +53,10 @@ namespace
                     cursor_pos.x + (node.pos.x + node.size.x / 2.f) * ppu,
                     cursor_pos.y + ((graph.size.y - node.pos.y) + node.size.y / 2.f) * ppu
                 );
-                ImGuiID const imid = std::stol(node.name);
+                auto name_id = std::stoul(node.name);
+                if (name_id > std::numeric_limits<ImGuiID>::max())
+                    throw std::exception("ImGuiID does not fit!");
+                ImGuiID const imid = static_cast<ImGuiID>(name_id);
                 graph.nodesBB[imid] = bb;
             }
         }
