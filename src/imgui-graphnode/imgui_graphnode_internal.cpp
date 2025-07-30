@@ -41,37 +41,43 @@ namespace internal
 
     std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp)
     {
+        if (stringp.empty())
+            return "";
+
         std::string output;
 
         char token = stringp.front();
         if (token == '"')
         {
             stringp.advance(1);
-            do
+            while (true)
             {
-                token = stringp.front();
-                output += token;
-                stringp.advance(1);
-
-                if (token == '\"')
+                if (token == '"')
                 {
                     stringp.advance(1);
                     break;
                 }
+                output += token;
 
-            } while (!stringp.empty());
-
-            do
+                stringp.advance(1);
+                if (stringp.empty())
+                    break;
+                
+                token = stringp.front();
+            }
+            while (true)
             {
                 stringp.advance(1);
+                if (stringp.empty())
+                    break;
+                
                 token = stringp.front();
-
                 if (token == ' ')
                 {
                     stringp.advance(1);
                     break;
                 }
-            } while (!stringp.empty());
+            }
             return output;
         }
         while (true)
