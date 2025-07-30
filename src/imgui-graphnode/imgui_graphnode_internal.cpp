@@ -74,7 +74,7 @@ namespace internal
             } while (!stringp.empty());
             return output;
         }
-        while (token != ' ')
+        while (true)
         {
             output += token;
 
@@ -83,6 +83,8 @@ namespace internal
                 break;
             
             token = stringp.front();
+            if (token == ' ')
+                stringp.advance(1);
         }
         return output;
     }
