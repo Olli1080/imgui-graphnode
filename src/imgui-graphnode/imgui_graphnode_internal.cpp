@@ -74,21 +74,16 @@ namespace internal
             } while (!stringp.empty());
             return output;
         }
-        do
+        while (token != ' ')
         {
-            stringp.advance(1);
-            token = stringp.front();
+            output += token;
 
-            if (token == ' ')
-            {
-                stringp.advance(1);
+            stringp.advance(1);
+            if (stringp.empty())
                 break;
-            }
-            else
-            {
-                output += token;
-            }
-        } while (!stringp.empty());
+            
+            token = stringp.front();
+        }
         return output;
     }
     /*
