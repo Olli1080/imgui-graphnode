@@ -84,7 +84,10 @@ namespace internal
             
             token = stringp.front();
             if (token == ' ')
+            {
                 stringp.advance(1);
+                break;
+            }
         }
         return output;
     }
