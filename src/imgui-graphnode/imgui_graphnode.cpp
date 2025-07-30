@@ -285,3 +285,20 @@ void IMGUI_GRAPHNODE_NAMESPACE::EndNodeGraph()
     }
     ImGui::Dummy(ImVec2(cache.graph.size.x * ppu, cache.graph.size.y * ppu));
 }
+
+std::string_view ImGuiGraphNode::ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
+{
+    switch (layout)
+    {
+    case ImGuiGraphNodeLayout_Circo: return "circo";
+    case ImGuiGraphNodeLayout_Dot: return "dot";
+    case ImGuiGraphNodeLayout_Fdp: return "fdp";
+    case ImGuiGraphNodeLayout_Neato: return "neato";
+    case ImGuiGraphNodeLayout_Osage: return "osage";
+    case ImGuiGraphNodeLayout_Sfdp: return "sfdp";
+    case ImGuiGraphNodeLayout_Twopi: return "twopi";
+    default:
+        IM_ASSERT(false);
+        return "";
+    }
+}

@@ -1,6 +1,6 @@
-#include "imgui_graphnode.h"
-#include "imgui_graphnode_internal.h"
 #include "imgui_graphnode_demo.h"
+
+#include "imgui_graphnode.h"
 
 template <class T>
 struct RBNode

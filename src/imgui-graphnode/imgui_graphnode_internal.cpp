@@ -176,23 +176,6 @@ bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, std:
     return true;
 }
 
-std::string_view ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
-{
-    switch (layout)
-    {
-        case ImGuiGraphNodeLayout_Circo: return "circo";
-        case ImGuiGraphNodeLayout_Dot: return "dot";
-        case ImGuiGraphNodeLayout_Fdp: return "fdp";
-        case ImGuiGraphNodeLayout_Neato: return "neato";
-        case ImGuiGraphNodeLayout_Osage: return "osage";
-        case ImGuiGraphNodeLayout_Sfdp: return "sfdp";
-        case ImGuiGraphNodeLayout_Twopi: return "twopi";
-        default:
-            IM_ASSERT(false);
-            return "";
-    }
-}
-
 float ImGuiGraphNode_BSplineVec2ComputeK(std::vector<ImVec2> const& p, std::vector<float> const& t, int i, int k, float x)
 {
     auto const f = [](std::vector<float> const& t, int i, int k, float x) -> float
@@ -314,7 +297,7 @@ void ImGuiGraphNodeRenderGraphLayout(ImGuiGraphNodeContextCache & cache)
 {
     char * data = nullptr;
     unsigned int size = 0;
-    const auto engine = ImGuiGraphNode_GetEngineNameFromLayoutEnum(cache.layout);
+    const auto engine = ImGuiGraphNode::ImGuiGraphNode_GetEngineNameFromLayoutEnum(cache.layout);
     int ok = 0;
 
     cache.graph = ImGuiGraphNode_Graph();

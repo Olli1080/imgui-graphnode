@@ -134,7 +134,6 @@ IMGUI_API ImVec4 ImGuiGraphNode_StringToImVec4Color(std::string const& color);
 IMGUI_API std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp);
 //IMGUI_API char * ImGuiGraphNode_ReadLine(char ** stringp);
 IMGUI_API bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, std::vector<char> const& data, size_t size);
-IMGUI_API std::string_view ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout);
 IMGUI_API ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, float x);
 IMGUI_API ImVec2 ImGuiGraphNode_BSplineVec2(std::vector<ImVec2> const&, float x);
 IMGUI_API void ImGuiGraphNodeRenderGraphLayout(ImGuiGraphNodeContextCache & cache);
