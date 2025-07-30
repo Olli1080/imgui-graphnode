@@ -2,17 +2,139 @@
 #include "imgui_graphnode_internal.h"
 #include "imgui_internal.h"
 
-static float IsPointInRectangle_IsLeft(ImVec2 const & p0, ImVec2 const & p1, ImVec2 const & p2)
-{
-    return (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
-}
+using namespace internal;
 
-static bool IsPointInRectangle(ImVec2 const & a, ImVec2 const & b, ImVec2 const & c, ImVec2 const & d, ImVec2 const & p)
+namespace
 {
-    return IsPointInRectangle_IsLeft(a, b, p) > 0
-        && IsPointInRectangle_IsLeft(b, c, p) > 0
-        && IsPointInRectangle_IsLeft(c, d, p) > 0
-        && IsPointInRectangle_IsLeft(d, a, p) > 0;
+    float IsPointInRectangle_IsLeft(ImVec2 const& p0, ImVec2 const& p1, ImVec2 const& p2)
+    {
+        return (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
+    }
+
+    bool IsPointInRectangle(ImVec2 const& a, ImVec2 const& b, ImVec2 const& c, ImVec2 const& d, ImVec2 const& p)
+    {
+        return IsPointInRectangle_IsLeft(a, b, p) > 0
+            && IsPointInRectangle_IsLeft(b, c, p) > 0
+            && IsPointInRectangle_IsLeft(c, d, p) > 0
+            && IsPointInRectangle_IsLeft(d, a, p) > 0;
+    }
+
+    int ImGuiGraphNodeFillDrawNodeBuffer(ImGuiGraphNode_Graph& graph, ImGuiGraphNode_DrawNode* drawnodes, ImVec2 cursor_pos, float ppu)
+    {
+        int const count = (int)graph.nodes.size();
+
+        if (drawnodes)
+        {
+            constexpr int num_segments = IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT - 1;
+            static_assert(num_segments > 0);
+            float a_min = 0.f;
+            float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
+
+            for (int i = 0; i < count; ++i)
+            {
+                ImGuiGraphNode_Node const& node = graph.nodes[i];
+                ImVec2 const textsize = ImGui::CalcTextSize(node.label.c_str());
+
+                for (int j = 0; j <= num_segments; j++)
+                {
+                    const float a = a_min + ((float)j / (float)num_segments) * (a_max - a_min);
+                    drawnodes[i].path[j].x = cursor_pos.x + (node.pos.x + ImCos(a) * node.size.x / 2.f) * ppu;
+                    drawnodes[i].path[j].y = cursor_pos.y + ((graph.size.y - node.pos.y) + ImSin(a) * node.size.y / 2.f) * ppu;
+                }
+                drawnodes[i].textpos.x = cursor_pos.x + node.pos.x * ppu - textsize.x / 2.f;
+                drawnodes[i].textpos.y = cursor_pos.y + (graph.size.y - node.pos.y) * ppu - textsize.y / 2.f;
+                drawnodes[i].text = node.label.c_str();
+                drawnodes[i].color = node.color;
+                drawnodes[i].fillcolor = node.fillcolor;
+
+                ImRect const bb(
+                    cursor_pos.x + (node.pos.x - node.size.x / 2.f) * ppu,
+                    cursor_pos.y + ((graph.size.y - node.pos.y) - node.size.y / 2.f) * ppu,
+                    cursor_pos.x + (node.pos.x + node.size.x / 2.f) * ppu,
+                    cursor_pos.y + ((graph.size.y - node.pos.y) + node.size.y / 2.f) * ppu
+                );
+                ImGuiID const imid = std::stol(node.name);
+                graph.nodesBB[imid] = bb;
+            }
+        }
+        return count;
+    }
+
+    int ImGuiGraphNodeFillDrawEdgeBuffer(ImGuiGraphNode_Graph& graph, ImGuiGraphNode_DrawEdge* drawedges, ImVec2 cursor_pos, float ppu)
+    {
+        int const count = (int)graph.edges.size();
+
+        if (drawedges)
+        {
+            constexpr int points_count = IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT;
+            static_assert(points_count > 1);
+
+            for (int i = 0; i < count; ++i)
+            {
+                ImGuiGraphNode_Edge const& edge = graph.edges[i];
+                ImVec2 const textsize = ImGui::CalcTextSize(edge.label.c_str());
+
+                for (size_t j = 0; j < (edge.points.size() - 1); ++j)
+                {
+                    ImVec2 const p1(
+                        cursor_pos.x + edge.points[j].x * ppu,
+                        cursor_pos.y + (graph.size.y - edge.points[j].y) * ppu
+                    );
+                    ImVec2 const p2(
+                        cursor_pos.x + edge.points[j + 1].x * ppu,
+                        cursor_pos.y + (graph.size.y - edge.points[j + 1].y) * ppu
+                    );
+                    ImVec2 const dir(p2.x - p1.x, p2.y - p1.y);
+                    ImVec2 left(-dir.y, dir.x);
+                    ImVec2 right(dir.y, -dir.x);
+                    float const magLeft = ImSqrt(left.x * left.x + left.y * left.y);
+                    float const magRight = ImSqrt(right.x * right.x + right.y * right.y);
+
+                    left.x /= magLeft;
+                    left.y /= magLeft;
+                    right.x /= magRight;
+                    right.y /= magRight;
+
+                    constexpr float k = 3.f;
+                    ImVec2 const a(p1.x + left.x * k, p1.y + left.y * k);
+                    ImVec2 const b(p1.x + right.x * k, p1.y + right.y * k);
+                    ImVec2 const c(p2.x + right.x * k, p2.y + right.y * k);
+                    ImVec2 const d(p2.x + left.x * k, p2.y + left.y * k);
+
+                    graph.edgesRectangle[edge.id].push_back({ a, b, c, d });
+                }
+                for (int x = 0; x < points_count; ++x)
+                {
+                    drawedges[i].path[x] = ImGuiGraphNode_BezierVec2(edge.points, x / float(points_count - 1));
+                    drawedges[i].path[x].y = graph.size.y - drawedges[i].path[x].y;
+                    drawedges[i].path[x].x *= ppu;
+                    drawedges[i].path[x].y *= ppu;
+                    drawedges[i].path[x].x += cursor_pos.x;
+                    drawedges[i].path[x].y += cursor_pos.y;
+                }
+                drawedges[i].textpos.x = cursor_pos.x + edge.labelPos.x * ppu - textsize.x / 2.f;
+                drawedges[i].textpos.y = cursor_pos.y + (graph.size.y - edge.labelPos.y) * ppu - textsize.y / 2.f;
+                drawedges[i].text = edge.label.c_str();
+                drawedges[i].color = edge.color;
+
+                ImVec2 const lastpoint = drawedges[i].path[points_count - 1];
+                float dirx = lastpoint.x - drawedges[i].path[points_count - 2].x;
+                float diry = lastpoint.y - drawedges[i].path[points_count - 2].y;
+                float const mag = ImSqrt(dirx * dirx + diry * diry);
+                float const mul1 = ppu * 0.1f;
+                float const mul2 = ppu * 0.0437f;
+
+                dirx /= mag;
+                diry /= mag;
+                drawedges[i].arrow1.x = lastpoint.x - dirx * mul1 - diry * mul2;
+                drawedges[i].arrow1.y = lastpoint.y - diry * mul1 + dirx * mul2;
+                drawedges[i].arrow2.x = lastpoint.x - dirx * mul1 + diry * mul2;
+                drawedges[i].arrow2.y = lastpoint.y - diry * mul1 - dirx * mul2;
+                drawedges[i].arrow3 = lastpoint;
+            }
+        }
+        return count;
+    }
 }
 
 void IMGUI_GRAPHNODE_NAMESPACE::CreateContext()
@@ -125,123 +247,6 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(std::string const& id, std::str
             }
         }
     }
-}
-
-int ImGuiGraphNodeFillDrawNodeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNode_DrawNode * drawnodes, ImVec2 cursor_pos, float ppu)
-{
-    int const count = (int)graph.nodes.size();
-
-    if (drawnodes)
-    {
-        constexpr int num_segments = IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT - 1;
-        static_assert(num_segments > 0);
-        float a_min = 0.f;
-        float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
-
-        for (int i = 0; i < count; ++i)
-        {
-            ImGuiGraphNode_Node const & node = graph.nodes[i];
-            ImVec2 const textsize = ImGui::CalcTextSize(node.label.c_str());
-
-            for (int j = 0; j <= num_segments; j++)
-            {
-                const float a = a_min + ((float)j / (float)num_segments) * (a_max - a_min);
-                drawnodes[i].path[j].x = cursor_pos.x + (node.pos.x + ImCos(a) * node.size.x / 2.f) * ppu;
-                drawnodes[i].path[j].y = cursor_pos.y + ((graph.size.y - node.pos.y) + ImSin(a) * node.size.y / 2.f) * ppu;
-            }
-            drawnodes[i].textpos.x = cursor_pos.x + node.pos.x * ppu - textsize.x / 2.f;
-            drawnodes[i].textpos.y = cursor_pos.y + (graph.size.y - node.pos.y) * ppu - textsize.y / 2.f;
-            drawnodes[i].text = node.label.c_str();
-            drawnodes[i].color = node.color;
-            drawnodes[i].fillcolor = node.fillcolor;
-
-            ImRect const bb(
-                cursor_pos.x + (node.pos.x - node.size.x / 2.f) * ppu,
-                cursor_pos.y + ((graph.size.y - node.pos.y) - node.size.y / 2.f) * ppu,
-                cursor_pos.x + (node.pos.x + node.size.x / 2.f) * ppu,
-                cursor_pos.y + ((graph.size.y - node.pos.y) + node.size.y / 2.f) * ppu
-            );
-            ImGuiID const imid = std::stol(node.name);
-            graph.nodesBB[imid] = bb;
-        }
-    }
-    return count;
-}
-
-int ImGuiGraphNodeFillDrawEdgeBuffer(ImGuiGraphNode_Graph & graph, ImGuiGraphNode_DrawEdge * drawedges, ImVec2 cursor_pos, float ppu)
-{
-    int const count = (int)graph.edges.size();
-
-    if (drawedges)
-    {
-        constexpr int points_count = IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT;
-        static_assert(points_count > 1);
-
-        for (int i = 0; i < count; ++i)
-        {
-            ImGuiGraphNode_Edge const & edge = graph.edges[i];
-            ImVec2 const textsize = ImGui::CalcTextSize(edge.label.c_str());
-
-            for (size_t j = 0; j < (edge.points.size() - 1); ++j)
-            {
-                ImVec2 const p1(
-                    cursor_pos.x + edge.points[j].x * ppu,
-                    cursor_pos.y + (graph.size.y - edge.points[j].y) * ppu
-                );
-                ImVec2 const p2(
-                    cursor_pos.x + edge.points[j + 1].x * ppu,
-                    cursor_pos.y + (graph.size.y - edge.points[j + 1].y) * ppu
-                );
-                ImVec2 const dir(p2.x - p1.x, p2.y - p1.y);
-                ImVec2 left(-dir.y, dir.x);
-                ImVec2 right(dir.y, -dir.x);
-                float const magLeft = ImSqrt(left.x * left.x + left.y * left.y);
-                float const magRight = ImSqrt(right.x * right.x + right.y * right.y);
-
-                left.x /= magLeft;
-                left.y /= magLeft;
-                right.x /= magRight;
-                right.y /= magRight;
-
-                constexpr float k = 3.f;
-                ImVec2 const a(p1.x + left.x * k, p1.y + left.y * k);
-                ImVec2 const b(p1.x + right.x * k, p1.y + right.y * k);
-                ImVec2 const c(p2.x + right.x * k, p2.y + right.y * k);
-                ImVec2 const d(p2.x + left.x * k, p2.y + left.y * k);
-
-                graph.edgesRectangle[edge.id].push_back({ a, b, c, d });
-            }
-            for (int x = 0; x < points_count; ++x)
-            {
-                drawedges[i].path[x] = ImGuiGraphNode_BezierVec2(edge.points, x / float(points_count - 1));
-                drawedges[i].path[x].y = graph.size.y - drawedges[i].path[x].y;
-                drawedges[i].path[x].x *= ppu;
-                drawedges[i].path[x].y *= ppu;
-                drawedges[i].path[x].x += cursor_pos.x;
-                drawedges[i].path[x].y += cursor_pos.y;
-            }
-            drawedges[i].textpos.x = cursor_pos.x + edge.labelPos.x * ppu - textsize.x / 2.f;
-            drawedges[i].textpos.y = cursor_pos.y + (graph.size.y - edge.labelPos.y) * ppu - textsize.y / 2.f;
-            drawedges[i].text = edge.label.c_str();
-            drawedges[i].color = edge.color;
-
-            ImVec2 const lastpoint = drawedges[i].path[points_count - 1];
-            float dirx = lastpoint.x - drawedges[i].path[points_count - 2].x;
-            float diry = lastpoint.y - drawedges[i].path[points_count - 2].y;
-            float const mag = ImSqrt(dirx * dirx + diry * diry);
-            float const mul1 = ppu * 0.1f;
-            float const mul2 = ppu * 0.0437f;
-
-            dirx /= mag;
-            diry /= mag;
-            drawedges[i].arrow1.x = lastpoint.x - dirx * mul1 - diry * mul2;
-            drawedges[i].arrow1.y = lastpoint.y - diry * mul1 + dirx * mul2;
-            drawedges[i].arrow2.x = lastpoint.x - dirx * mul1 + diry * mul2;
-            drawedges[i].arrow2.y = lastpoint.y - diry * mul1 - dirx * mul2;
-            drawedges[i].arrow3 = lastpoint;
-        }
-    }
-    return count;
 }
 
 void IMGUI_GRAPHNODE_NAMESPACE::EndNodeGraph()
