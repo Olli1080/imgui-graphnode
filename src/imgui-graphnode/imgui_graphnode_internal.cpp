@@ -84,6 +84,10 @@ namespace internal
                 stringp.advance(1);
                 break;
             }
+            else
+            {
+                output += token;
+            }
         } while (!stringp.empty());
         return output;
     }
