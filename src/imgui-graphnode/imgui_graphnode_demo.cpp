@@ -474,7 +474,7 @@ void IMGUI_GRAPHNODE_NAMESPACE::ShowGraphNodeDemoWindow(bool * p_open)
     {
         auto const items_getter = [](void *, int idx, char const ** out_text)
         {
-            *out_text = ImGuiGraphNode_GetEngineNameFromLayoutEnum((ImGuiGraphNodeLayout)idx).data();
+            *out_text = ImGuiGraphNode_GetEngineNameFromLayoutEnum((ImGuiGraphNodeLayout)idx).c_str();
             return true;
         };
         ImGui::Checkbox("auto resize window", &autoresize);

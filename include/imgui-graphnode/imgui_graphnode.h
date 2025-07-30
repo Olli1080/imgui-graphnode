@@ -34,7 +34,7 @@ namespace IMGUI_GRAPHNODE_NAMESPACE
     IMGUI_API void NodeGraphAddEdge(std::string const& id, std::string const& node_id_a, std::string const& node_id_b);
     IMGUI_API void NodeGraphAddEdge(std::string const& id, std::string const& node_id_a, std::string const& node_id_b, ImVec4 const & color);
     IMGUI_API void EndNodeGraph();
-    IMGUI_API std::string_view ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout);
+    IMGUI_API const std::string& ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout);
 }
 
 #endif /* !IMGUI_GRAPHNODE_H_ */

@@ -291,19 +291,20 @@ void IMGUI_GRAPHNODE_NAMESPACE::EndNodeGraph()
     ImGui::Dummy(ImVec2(cache.graph.size.x * ppu, cache.graph.size.y * ppu));
 }
 
-std::string_view ImGuiGraphNode::ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
+namespace
 {
-    switch (layout)
+    const std::vector<std::string> enum_names =
     {
-    case ImGuiGraphNodeLayout_Circo: return "circo";
-    case ImGuiGraphNodeLayout_Dot: return "dot";
-    case ImGuiGraphNodeLayout_Fdp: return "fdp";
-    case ImGuiGraphNodeLayout_Neato: return "neato";
-    case ImGuiGraphNodeLayout_Osage: return "osage";
-    case ImGuiGraphNodeLayout_Sfdp: return "sfdp";
-    case ImGuiGraphNodeLayout_Twopi: return "twopi";
-    default:
+		"circo", "dot", "fdp", "neato", "osage", "sfdp", "twopi", ""
+    };
+}
+
+const std::string& ImGuiGraphNode::ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
+{
+    if (layout > ImGuiGraphNodeLayout_Twopi)
+    {
         IM_ASSERT(false);
-        return "";
+        return enum_names[ImGuiGraphNodeLayout_Twopi + 1];
     }
+    return enum_names[layout];
 }

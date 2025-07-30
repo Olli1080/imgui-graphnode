@@ -307,7 +307,7 @@ namespace internal
         IM_ASSERT(g_ctx.gvcontext != nullptr);
         IM_ASSERT(g_ctx.gvgraph != nullptr);
         agattr(g_ctx.gvgraph, AGEDGE, (char*)"dir", "none");
-        ok = gvLayout(g_ctx.gvcontext, g_ctx.gvgraph, engine.data());
+        ok = gvLayout(g_ctx.gvcontext, g_ctx.gvgraph, engine.c_str());
         IM_ASSERT(ok == 0);
         ok = gvRenderData(g_ctx.gvcontext, g_ctx.gvgraph, "plain", &data, &size);
         IM_ASSERT(ok == 0);
