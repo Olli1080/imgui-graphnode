@@ -281,13 +281,14 @@ namespace internal
         }
     }
 
-    ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, int count, float x)
+    ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, float x)
     {
         ImVec2 result(0.f, 0.f);
 
-        for (int i = 0; i < count; ++i)
+        size_t size = points.size();
+        for (size_t i = 0; i < size; ++i)
         {
-            float const k = ImGuiGraphNode_BinomialCoefficientTable(count - 1, i) * ImPow(1 - x, count - i - 1) * ImPow(x, i);
+            float const k = ImGuiGraphNode_BinomialCoefficientTable(size - 1, i) * ImPow(1 - x, size - i - 1) * ImPow(x, i);
 
             result.x += points[i].x * k;
             result.y += points[i].y * k;
