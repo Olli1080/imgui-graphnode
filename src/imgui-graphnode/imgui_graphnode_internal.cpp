@@ -176,7 +176,7 @@ bool ImGuiGraphNode_ReadGraphFromMemory(ImGuiGraphNodeContextCache & cache, std:
     return true;
 }
 
-char const * ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
+std::string_view ImGuiGraphNode_GetEngineNameFromLayoutEnum(ImGuiGraphNodeLayout layout)
 {
     switch (layout)
     {
@@ -314,14 +314,14 @@ void ImGuiGraphNodeRenderGraphLayout(ImGuiGraphNodeContextCache & cache)
 {
     char * data = nullptr;
     unsigned int size = 0;
-    char const * const engine = ImGuiGraphNode_GetEngineNameFromLayoutEnum(cache.layout);
+    const auto engine = ImGuiGraphNode_GetEngineNameFromLayoutEnum(cache.layout);
     int ok = 0;
 
     cache.graph = ImGuiGraphNode_Graph();
     IM_ASSERT(g_ctx.gvcontext != nullptr);
     IM_ASSERT(g_ctx.gvgraph != nullptr);
     agattr(g_ctx.gvgraph, AGEDGE, (char *)"dir", "none");
-    ok = gvLayout(g_ctx.gvcontext, g_ctx.gvgraph, engine);
+    ok = gvLayout(g_ctx.gvcontext, g_ctx.gvgraph, engine.data());
     IM_ASSERT(ok == 0);
     ok = gvRenderData(g_ctx.gvcontext, g_ctx.gvgraph, "plain", &data, &size);
     IM_ASSERT(ok == 0);

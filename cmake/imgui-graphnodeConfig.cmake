@@ -5,4 +5,4 @@ find_dependency(PkgConfig)
 
 pkg_search_module(graphviz libgvc IMPORTED_TARGET REQUIRED)
 
-include(${CMAKE_CURRENT_LIST_DIR}/imgui_graphnodeTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/imgui-graphnodeTargets.cmake)

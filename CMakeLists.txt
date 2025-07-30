@@ -7,8 +7,8 @@ option(WITH_EXAMPLE "Build with example graph vizualization" ON)
 
 add_subdirectory(src)
 
-install(EXPORT imgui_graphnodeTargets DESTINATION share/imgui_graphnode FILE imgui_graphnodeTargets.cmake)
+install(EXPORT imgui-graphnodeTargets DESTINATION share/imgui-graphnode FILE imgui-graphnodeTargets.cmake)
 install(
-	FILES cmake/imgui_graphnodeConfig.cmake
-	DESTINATION share/imgui_graphnode
+	FILES cmake/imgui-graphnodeConfig.cmake
+	DESTINATION share/imgui-graphnode
 )
