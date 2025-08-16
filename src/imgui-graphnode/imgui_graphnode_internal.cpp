@@ -18,7 +18,7 @@ namespace internal
     std::string ImColorToString(ImColor const& color)
     {
     	const uint32_t color_u = static_cast<ImU32>(color);
-        return std::format("#{:8x}", color_u);
+        return std::format("#{:08x}", color_u);
     }
 
     ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color)
