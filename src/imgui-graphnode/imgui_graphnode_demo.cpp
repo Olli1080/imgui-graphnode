@@ -1,5 +1,7 @@
 #include "imgui_graphnode_demo.h"
 
+#include <format>
+
 #include "imgui_graphnode.h"
 
 template <class T>
@@ -227,7 +229,7 @@ struct RBTree
         fix(newnode);
     }
 
-    void clear(RBNode<T> * node)
+    void clear(RBNode<T>* node)
     {
         if (node)
         {
@@ -243,7 +245,7 @@ struct RBTree
         root = nullptr;
     }
 
-    RBNode<T> * find(RBNode<T> * node, T const & value)
+    RBNode<T>* find(RBNode<T> * node, T const & value)
     {
         if (!node) return nullptr;
 
@@ -273,16 +275,12 @@ struct RBTree
     Compare compare;
 };
 
-void draw_rbnode(RBNode<std::string> * node, RBNode<std::string> * found_node)
+void draw_rbnode(RBNode<std::string>* node, RBNode<std::string>* found_node)
 {
-    char * nodea = nullptr;
-    char * nodeb = nullptr;
-    char edge[64];
+    char* nodeb = nullptr;
     int len = 0;
 
-    len = snprintf(nullptr, 0, "%s##%p", node->value.c_str(), (void *)node);
-    nodea = (char *)alloca(len + 1);
-    sprintf(nodea, "%s##%p", node->value.c_str(), (void *)node);
+    auto nodea = std::format("{}##{}", node->value, static_cast<const void*>(node));
     ImGuiGraphNode::NodeGraphAddNode(
         nodea,
         node == found_node ? ImVec4(0.f, 1.f, 0.f, 1.f) : ImVec4(1.f, 1.f, 1.f, 1.f),
@@ -290,15 +288,13 @@ void draw_rbnode(RBNode<std::string> * node, RBNode<std::string> * found_node)
     );
     for (auto * child : { node->left, node->right })
     {
-        if (child)
-        {
-            draw_rbnode(child, found_node);
-            len = snprintf(nullptr, 0, "%s##%p", child->value.c_str(), (void *)child);
-            nodeb = (char *)alloca(len + 1);
-            sprintf(nodeb, "%s##%p", child->value.c_str(), (void *)child);
-            sprintf(edge, "##%p->%p", (void *)node, (void *)child);
-            ImGuiGraphNode::NodeGraphAddEdge(edge, nodea, nodeb);
-        }
+        if (!child)
+            continue;
+        
+        draw_rbnode(child, found_node);
+        auto nodeb = std::format("{}##{}", child->value, static_cast<const void*>(child));
+        auto edge = std::format("##{}->{}", static_cast<const void*>(node), static_cast<const void*>(child));
+        ImGuiGraphNode::NodeGraphAddEdge(edge, nodea, nodeb);
     }
 }
 

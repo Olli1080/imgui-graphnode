@@ -280,10 +280,7 @@ namespace internal
         {
             return ImGuiGraphNode_BinomialCoefficient_Table[n][k];
         }
-        else
-        {
-            return ImGuiGraphNode_BinomialCoefficient(n, k);
-        }
+    	return ImGuiGraphNode_BinomialCoefficient(n, k);
     }
 
     ImVec2 ImGuiGraphNode_BezierVec2(std::vector<ImVec2> const& points, float x)
@@ -311,7 +308,7 @@ namespace internal
         cache.graph = ImGuiGraphNode_Graph();
         IM_ASSERT(g_ctx.gvcontext != nullptr);
         IM_ASSERT(g_ctx.gvgraph != nullptr);
-        agattr(g_ctx.gvgraph, AGEDGE, (char*)"dir", "none");
+        agattr(g_ctx.gvgraph, AGEDGE, const_cast<char*>("dir"), "none");
         ok = gvLayout(g_ctx.gvcontext, g_ctx.gvgraph, engine.c_str());
         IM_ASSERT(ok == 0);
         ok = gvRenderData(g_ctx.gvcontext, g_ctx.gvgraph, "plain", &data, &size);

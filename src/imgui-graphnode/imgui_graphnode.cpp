@@ -174,21 +174,24 @@ bool IMGUI_GRAPHNODE_NAMESPACE::BeginNodeGraph(std::string const& id, ImGuiGraph
 
 void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id)
 {
-    ImVec4 const color = ImGui::GetStyle().Colors[ImGuiCol_Text];
-    ImVec4 const fillcolor = ImVec4(0.f, 0.f, 0.f, 0.f);
+    ImColor const color = ImGui::GetStyle().Colors[ImGuiCol_Text];
+    ImColor const fillcolor = ImVec4(0.f, 0.f, 0.f, 0.f);
     NodeGraphAddNode(id, color, fillcolor);
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id, ImVec4 const& color, ImVec4 const& fillcolor)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id, ImColor const& color, ImColor const& fillcolor)
 {
     auto& cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph != nullptr);
     Agnode_t* const n = agnode(g_ctx.gvgraph, ImGuiIDToString(id).data(), 1);
     IM_ASSERT(n != nullptr);
+
+    auto stop = ImGui::FindRenderedTextEnd(id.c_str());
+    std::string text = { id.c_str(), stop };
     //IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
     auto const color_str = ImColorToString(color);
     auto const fillcolor_str = ImColorToString(fillcolor);
-    agsafeset(n, const_cast<char*>("label"), id.c_str(), "");
+    agsafeset(n, const_cast<char*>("label"), text.c_str(), "");
     agsafeset(n, const_cast<char*>("color"), color_str.c_str(), "");
     agsafeset(n, const_cast<char*>("fillcolor"), fillcolor_str.c_str(), "");
 
