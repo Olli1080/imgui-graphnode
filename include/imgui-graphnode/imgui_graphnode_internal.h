@@ -115,22 +115,8 @@ namespace internal
 
     extern ImGuiGraphNodeContext g_ctx;
 
-    template <size_t N>
-    class ImGuiGraphNode_ShortString
-    {
-    public:
-        friend ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id);
-        friend ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const& color);
-
-        operator char* () { return buf; }
-        operator char const* () const { return buf; }
-
-    private:
-        char buf[N];
-    };
-
     IMGUI_API std::string ImGuiIDToString(std::string const& id);
-    IMGUI_API std::string ImColorToString(ImVec4 const& color);
+    IMGUI_API std::string ImColorToString(ImColor const& color);
     IMGUI_API ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color);
     IMGUI_API ImVec4 ImGuiGraphNode_StringToImVec4Color(std::string const& color);
     IMGUI_API std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp);
