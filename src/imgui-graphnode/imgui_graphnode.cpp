@@ -2,6 +2,8 @@
 #include "imgui_graphnode_internal.h"
 #include "imgui_internal.h"
 
+#include <numbers>
+
 using namespace internal;
 
 namespace
@@ -28,14 +30,14 @@ namespace
             constexpr int num_segments = IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT - 1;
             static_assert(num_segments > 0);
             float a_min = 0.f;
-            float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
+            float a_max = (std::numbers::pi_v<float> * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
 
             for (int i = 0; i < count; ++i)
             {
                 ImGuiGraphNode_Node const& node = graph.nodes[i];
                 ImVec2 const textsize = ImGui::CalcTextSize(node.label.c_str());
 
-                for (int j = 0; j <= num_segments; j++)
+                for (int j = 0; j <= num_segments; ++j)
                 {
                     const float a = a_min + ((float)j / (float)num_segments) * (a_max - a_min);
                     drawnodes[i].path[j].x = cursor_pos.x + (node.pos.x + ImCos(a) * node.size.x / 2.f) * ppu;
@@ -104,7 +106,7 @@ namespace
                     ImVec2 const c(p2.x + right.x * k, p2.y + right.y * k);
                     ImVec2 const d(p2.x + left.x * k, p2.y + left.y * k);
 
-                    graph.edgesRectangle[edge.id].push_back({ a, b, c, d });
+                    graph.edgesRectangle[edge.id].emplace_back(a, b, c, d);
                 }
                 for (int x = 0; x < points_count; ++x)
                 {
@@ -159,7 +161,7 @@ bool IMGUI_GRAPHNODE_NAMESPACE::BeginNodeGraph(std::string const& id, ImGuiGraph
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph == nullptr);
     IM_ASSERT(cache.graphid_current.empty());
-    g_ctx.gvgraph = agopen(const_cast<char *>("g"), Agdirected, nullptr);
+    g_ctx.gvgraph = agopen(const_cast<char*>("g"), Agdirected, nullptr);
     cache.layout = layout;
     cache.pixel_per_unit = pixel_per_unit;
 
@@ -177,18 +179,18 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id)
     NodeGraphAddNode(id, color, fillcolor);
 }
 
-void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id, ImVec4 const & color, ImVec4 const & fillcolor)
+void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddNode(std::string const& id, ImVec4 const& color, ImVec4 const& fillcolor)
 {
-    auto & cache = g_ctx.graph_caches[g_ctx.lastid];
+    auto& cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph != nullptr);
-    Agnode_t * const n = agnode(g_ctx.gvgraph, ImGuiIDToString(id), 1);
+    Agnode_t* const n = agnode(g_ctx.gvgraph, ImGuiIDToString(id).data(), 1);
     IM_ASSERT(n != nullptr);
-    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
-    auto const color_str = ImVec4ColorToString(color);
-    auto const fillcolor_str = ImVec4ColorToString(fillcolor);
-    agsafeset(n, (char *)"label", text, "");
-    agsafeset(n, (char *)"color", color_str, "");
-    agsafeset(n, (char *)"fillcolor", fillcolor_str, "");
+    //IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
+    auto const color_str = ImColorToString(color);
+    auto const fillcolor_str = ImColorToString(fillcolor);
+    agsafeset(n, const_cast<char*>("label"), id.c_str(), "");
+    agsafeset(n, const_cast<char*>("color"), color_str.c_str(), "");
+    agsafeset(n, const_cast<char*>("fillcolor"), fillcolor_str.c_str(), "");
 
     cache.graphid_current += id;
     cache.graphid_current += color_str;
@@ -210,22 +212,22 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(std::string const& id, std::str
 {
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     IM_ASSERT(g_ctx.gvgraph != nullptr);
-    Agnode_t * const a = agnode(g_ctx.gvgraph, ImGuiIDToString(node_id_a), 0);
-    Agnode_t * const b = agnode(g_ctx.gvgraph, ImGuiIDToString(node_id_b), 0);
+    Agnode_t* const a = agnode(g_ctx.gvgraph, ImGuiIDToString(node_id_a).data(), 0);
+    Agnode_t* const b = agnode(g_ctx.gvgraph, ImGuiIDToString(node_id_b).data(), 0);
     IM_ASSERT(a != nullptr);
     IM_ASSERT(b != nullptr);
-    Agedge_t * const e = agedge(g_ctx.gvgraph, a, b, ImGuiIDToString(id), 1);
+    Agedge_t* const e = agedge(g_ctx.gvgraph, a, b, ImGuiIDToString(id).data(), 1);
     IM_ASSERT(e != nullptr);
-    IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
-    auto const color_str = ImVec4ColorToString(color);
-    agsafeset(e, (char *)"label", text, "");
+    //IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(text, id.c_str());
+    auto const color_str = ImColorToString(color);
+    agsafeset(e, const_cast<char*>("label"), id.c_str(), "");
     ImGuiID const imid = ImGui::GetID(id.c_str(), ImGui::FindRenderedTextEnd(id.c_str()));
     char identifier[16];
     sprintf_s(identifier, "#%x", imid);
     // graphviz library doesn't serialize the edge's identifier, so we use the
     // color field to store the ImGuiID, which will later be used to retrieve
     // the edge's properties.
-    agsafeset(e, (char *)"color", identifier, "");
+    agsafeset(e, const_cast<char*>("color"), identifier, "");
     cache.edgeIdToInfo[imid] = ImGuiGraphNode_EdgeInfo { ImGui::GetColorU32(color) };
 
     cache.graphid_current += id;
@@ -235,19 +237,19 @@ void IMGUI_GRAPHNODE_NAMESPACE::NodeGraphAddEdge(std::string const& id, std::str
 
     ImGui::ItemAdd(ImRect(), imid);
     auto const it = cache.graph.edgesRectangle.find(imid);
-    if (it != cache.graph.edgesRectangle.end())
-    {
-        for (auto const & rect : it->second)
-        {
-            // Uncomment to draw edge bouding boxes
-            //ImVec2 lines[] { rect.a, rect.b, rect.c, rect.d };
-            //ImGui::GetWindowDrawList()->AddPolyline(lines, 4, IM_COL32(255, 0, 0, 255), ImDrawFlags_Closed, 2.0f);
+    if (it == cache.graph.edgesRectangle.end())
+        return;
 
-            if (IsPointInRectangle(rect.a, rect.b, rect.c, rect.d, ImGui::GetIO().MousePos))
-            {
-                GImGui->LastItemData.StatusFlags |= ImGuiItemStatusFlags_HoveredRect;
-                break;
-            }
+    for (auto const& rect : it->second)
+    {
+        // Uncomment to draw edge bounding boxes
+        //ImVec2 lines[] { rect.a, rect.b, rect.c, rect.d };
+        //ImGui::GetWindowDrawList()->AddPolyline(lines, 4, IM_COL32(255, 0, 0, 255), ImDrawFlags_Closed, 2.0f);
+
+        if (IsPointInRectangle(rect.a, rect.b, rect.c, rect.d, ImGui::GetIO().MousePos))
+        {
+            GImGui->LastItemData.StatusFlags |= ImGuiItemStatusFlags_HoveredRect;
+            break;
         }
     }
 }
@@ -257,7 +259,7 @@ void IMGUI_GRAPHNODE_NAMESPACE::EndNodeGraph()
     auto & cache = g_ctx.graph_caches[g_ctx.lastid];
     float const ppu = cache.pixel_per_unit;
     ImVec2 const cursor_pos = ImGui::GetCursorScreenPos();
-    ImDrawList * const drawlist = ImGui::GetWindowDrawList();
+    ImDrawList* const drawlist = ImGui::GetWindowDrawList();
 
     if (cache.graphid_current != cache.graphid_previous)
     {

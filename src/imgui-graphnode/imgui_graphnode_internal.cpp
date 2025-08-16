@@ -4,26 +4,21 @@
 
 #include <algorithm>
 #include <ranges>
+#include <format>
 
 namespace internal
 {
     ImGuiGraphNodeContext g_ctx;
 
-    ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id)
+    std::string ImGuiIDToString(std::string const& id)
     {
-        ImGuiGraphNode_ShortString<32> str;
-
-        sprintf_s(str.buf, "%u", ImGui::GetID(id.c_str()));
-        return str;
+        return std::format("{}", ImGui::GetID(id.c_str()));
     }
 
-    ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const& color)
+    std::string ImColorToString(ImColor const& color)
     {
-        ImGuiGraphNode_ShortString<16> str;
-        ImU32 const rgba = ImGui::ColorConvertFloat4ToU32(color);
-
-        sprintf_s(str.buf, "#%x", rgba);
-        return str;
+    	const uint32_t color_u = static_cast<ImU32>(color);
+        return std::format("#{:8x}", color_u);
     }
 
     ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color)

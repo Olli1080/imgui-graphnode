@@ -16,7 +16,7 @@ extern "C"
 #include "imgui_internal.h"
 
 namespace internal
-{
+{/*
 #define IMGUI_GRAPHNODE_CREATE_LABEL_ALLOCA(_name, _label) \
     char * _name; \
     do { \
@@ -26,7 +26,7 @@ namespace internal
         memcpy(_name, _label, size); \
         _name[size] = '\0'; \
     } while(0)
-
+	*/
     constexpr auto IMGUI_GRAPHNODE_DRAW_NODE_PATH_COUNT = 32;
     constexpr auto IMGUI_GRAPHNODE_DRAW_EDGE_PATH_COUNT = 64;
 
@@ -129,8 +129,8 @@ namespace internal
         char buf[N];
     };
 
-    IMGUI_API ImGuiGraphNode_ShortString<32> ImGuiIDToString(std::string const& id);
-    IMGUI_API ImGuiGraphNode_ShortString<16> ImVec4ColorToString(ImVec4 const& color);
+    IMGUI_API std::string ImGuiIDToString(std::string const& id);
+    IMGUI_API std::string ImColorToString(ImVec4 const& color);
     IMGUI_API ImU32 ImGuiGraphNode_StringToU32Color(std::string const& color);
     IMGUI_API ImVec4 ImGuiGraphNode_StringToImVec4Color(std::string const& color);
     IMGUI_API std::string ImGuiGraphNode_ReadToken(std::ranges::subrange<std::vector<char>::const_iterator>& stringp);
